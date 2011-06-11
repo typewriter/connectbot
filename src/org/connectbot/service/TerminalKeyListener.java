@@ -292,11 +292,13 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 			case KeyEvent.KEYCODE_DEL:
 				((vt320) buffer).keyPressed(vt320.KEY_BACK_SPACE, ' ',
 						getStateForBuffer());
-				metaState &= ~META_TRANSIENT;
+                if (!hardKeyboard || hardKeyboardHidden)
+                    metaState &= ~META_TRANSIENT;
 				return true;
 			case KeyEvent.KEYCODE_ENTER:
 				((vt320)buffer).keyTyped(vt320.KEY_ENTER, ' ', 0);
-				metaState &= ~META_TRANSIENT;
+                if (!hardKeyboard || hardKeyboardHidden)
+                    metaState &= ~META_TRANSIENT;
 				return true;
 
 			case KeyEvent.KEYCODE_DPAD_LEFT:
@@ -306,7 +308,8 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 				} else {
 					((vt320) buffer).keyPressed(vt320.KEY_LEFT, ' ',
 							getStateForBuffer());
-					metaState &= ~META_TRANSIENT;
+                    if (!hardKeyboard || hardKeyboardHidden)
+                        metaState &= ~META_TRANSIENT;
 					bridge.tryKeyVibrate();
 				}
 				return true;
@@ -318,7 +321,8 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 				} else {
 					((vt320) buffer).keyPressed(vt320.KEY_UP, ' ',
 							getStateForBuffer());
-					metaState &= ~META_TRANSIENT;
+                    if (!hardKeyboard || hardKeyboardHidden)
+                        metaState &= ~META_TRANSIENT;
 					bridge.tryKeyVibrate();
 				}
 				return true;
@@ -330,7 +334,8 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 				} else {
 					((vt320) buffer).keyPressed(vt320.KEY_DOWN, ' ',
 							getStateForBuffer());
-					metaState &= ~META_TRANSIENT;
+                    if (!hardKeyboard || hardKeyboardHidden)
+                        metaState &= ~META_TRANSIENT;
 					bridge.tryKeyVibrate();
 				}
 				return true;
@@ -342,7 +347,8 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 				} else {
 					((vt320) buffer).keyPressed(vt320.KEY_RIGHT, ' ',
 							getStateForBuffer());
-					metaState &= ~META_TRANSIENT;
+                    if (!hardKeyboard || hardKeyboardHidden)
+                        metaState &= ~META_TRANSIENT;
 					bridge.tryKeyVibrate();
 				}
 				return true;
@@ -369,7 +375,8 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 				} else {
 					if ((metaState & META_CTRL_ON) != 0) {
 						sendEscape();
-						metaState &= ~META_CTRL_ON;
+	                    if (!hardKeyboard || hardKeyboardHidden)
+	                        metaState &= ~META_CTRL_ON;
 					} else
 						metaPress(META_CTRL_ON);
 				}
