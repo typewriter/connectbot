@@ -50,6 +50,11 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 	public final static int META_SHIFT_LOCK = 0x20;
 	public final static int META_SLASH = 0x40;
 	public final static int META_TAB = 0x80;
+	public final static int META_RSHIFT_ON = 0x100;
+
+	public final static int ANDROID11_KEYCODE_CTRL_LEFT = 0x71;
+	public final static int ANDROID11_KEYCODE_CTRL_RIGHT = 0x72;
+    public final static int ANDROID11_META_CTRL_ON = 0x1000;
 
 	// The bit mask of momentary and lock states for each
 	public final static int META_CTRL_MASK = META_CTRL_ON | META_CTRL_LOCK;
@@ -107,8 +112,13 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 		try {
 			final boolean hardKeyboardHidden = manager.hardKeyboardHidden;
 
+			if (hardKeyboard && !hardKeyboardHidden) {
+			    metaState &= ~(META_SHIFT_LOCK | META_CTRL_LOCK | META_ALT_LOCK);
+			}
+
 			// Ignore all key-up events except for the special keys
 			if (event.getAction() == KeyEvent.ACTION_UP) {
+			    System.out.println("Up: "+Integer.toString(keyCode));
 				// There's nothing here for virtual keyboard users.
 				if (!hardKeyboard || (hardKeyboard && hardKeyboardHidden))
 					return false;
@@ -117,31 +127,26 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 				if (bridge.isDisconnected() || bridge.transport == null)
 					return false;
 
-				if (PreferenceConstants.KEYMODE_RIGHT.equals(keymode)) {
-					if (keyCode == KeyEvent.KEYCODE_ALT_RIGHT
-							&& (metaState & META_SLASH) != 0) {
-						metaState &= ~(META_SLASH | META_TRANSIENT);
-						bridge.transport.write('/');
-						return true;
-					} else if (keyCode == KeyEvent.KEYCODE_SHIFT_RIGHT
-							&& (metaState & META_TAB) != 0) {
-						metaState &= ~(META_TAB | META_TRANSIENT);
-						bridge.transport.write(0x09);
-						return true;
-					}
-				} else if (PreferenceConstants.KEYMODE_LEFT.equals(keymode)) {
-					if (keyCode == KeyEvent.KEYCODE_ALT_LEFT
-							&& (metaState & META_SLASH) != 0) {
-						metaState &= ~(META_SLASH | META_TRANSIENT);
-						bridge.transport.write('/');
-						return true;
-					} else if (keyCode == KeyEvent.KEYCODE_SHIFT_LEFT
-							&& (metaState & META_TAB) != 0) {
-						metaState &= ~(META_TAB | META_TRANSIENT);
-						bridge.transport.write(0x09);
-						return true;
-					}
-				}
+                switch (keyCode) {
+                case KeyEvent.KEYCODE_ALT_LEFT:
+                case KeyEvent.KEYCODE_ALT_RIGHT:
+                    System.out.println("Alt up!");
+                    metaState &= ~META_ALT_ON;
+                    return true;
+                case KeyEvent.KEYCODE_SHIFT_LEFT:
+                    System.out.println("Shift up!");
+                    metaState &= ~META_SHIFT_ON;
+                    return true;
+                case ANDROID11_KEYCODE_CTRL_LEFT:
+                case ANDROID11_KEYCODE_CTRL_RIGHT:
+                    System.out.println("Ctrl up!");
+                    metaState &= ~META_CTRL_ON;
+                    return true;
+                case KeyEvent.KEYCODE_SHIFT_RIGHT:
+                    System.out.println("RSHIFT up!");
+                    metaState &= ~META_RSHIFT_ON;
+                    return true;
+                }
 
 				return false;
 			}
@@ -161,7 +166,9 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 
 			bridge.resetScrollPosition();
 
-			boolean printing = (keymap.isPrintingKey(keyCode) || keyCode == KeyEvent.KEYCODE_SPACE);
+			boolean printing = (keymap.isPrintingKey(keyCode) ||
+			        keyCode == KeyEvent.KEYCODE_SPACE ||
+			        keyCode == KeyEvent.KEYCODE_TAB);
 
 			// otherwise pass through to existing session
 			// print normal keys
@@ -172,26 +179,29 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 
 				if ((metaState & META_SHIFT_MASK) != 0) {
 					curMetaState |= KeyEvent.META_SHIFT_ON;
-					metaState &= ~META_SHIFT_ON;
+                    if (!hardKeyboard || hardKeyboardHidden)
+                        metaState &= ~META_SHIFT_ON;
 					bridge.redraw();
 				}
 
 				if ((metaState & META_ALT_MASK) != 0) {
 					curMetaState |= KeyEvent.META_ALT_ON;
-					metaState &= ~META_ALT_ON;
+                    if (!hardKeyboard || hardKeyboardHidden)
+                        metaState &= ~META_ALT_ON;
 					bridge.redraw();
 				}
 
-				int key = keymap.get(keyCode, curMetaState);
+				/* & 0xfff to remove CTRL, ALT etc. state, which produce
+				 * unprintable characters, and make key == 0 */
+				int key = keymap.get(keyCode, curMetaState & 0xfff);
+                System.out.println("keymap("+Integer.toString(keyCode)+", "+Integer.toString(curMetaState)+") = "+Integer.toString(key));
 
 				if ((metaState & META_CTRL_MASK) != 0) {
-					metaState &= ~META_CTRL_ON;
+				    if (!hardKeyboard || hardKeyboardHidden)
+				        metaState &= ~META_CTRL_ON;
 					bridge.redraw();
 
-					if ((!hardKeyboard || (hardKeyboard && hardKeyboardHidden))
-							&& sendFunctionKey(keyCode))
-						return true;
-
+					System.out.println("Applying Ctrl to "+Integer.toString(key));
 					// Support CTRL-a through CTRL-z
 					if (key >= 0x61 && key <= 0x7A)
 						key -= 0x60;
@@ -202,11 +212,12 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 						key = 0x00;
 					else if (key == 0x3F)
 						key = 0x7F;
+					System.out.println("Applied Ctrl: "+Integer.toString(key));
 				}
 
 				// handle pressing f-keys
 				if ((hardKeyboard && !hardKeyboardHidden)
-						&& (curMetaState & KeyEvent.META_SHIFT_ON) != 0
+						&& (metaState & META_RSHIFT_ON) != 0
 						&& sendFunctionKey(keyCode))
 					return true;
 
@@ -229,53 +240,35 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 
 			// try handling keymode shortcuts
 			if (hardKeyboard && !hardKeyboardHidden &&
-					event.getRepeatCount() == 0) {
-				if (PreferenceConstants.KEYMODE_RIGHT.equals(keymode)) {
-					switch (keyCode) {
-					case KeyEvent.KEYCODE_ALT_RIGHT:
-						metaState |= META_SLASH;
-						return true;
-					case KeyEvent.KEYCODE_SHIFT_RIGHT:
-						metaState |= META_TAB;
-						return true;
-					case KeyEvent.KEYCODE_SHIFT_LEFT:
-						metaPress(META_SHIFT_ON);
-						return true;
-					case KeyEvent.KEYCODE_ALT_LEFT:
-						metaPress(META_ALT_ON);
-						return true;
-					}
-				} else if (PreferenceConstants.KEYMODE_LEFT.equals(keymode)) {
-					switch (keyCode) {
-					case KeyEvent.KEYCODE_ALT_LEFT:
-						metaState |= META_SLASH;
-						return true;
-					case KeyEvent.KEYCODE_SHIFT_LEFT:
-						metaState |= META_TAB;
-						return true;
-					case KeyEvent.KEYCODE_SHIFT_RIGHT:
-						metaPress(META_SHIFT_ON);
-						return true;
-					case KeyEvent.KEYCODE_ALT_RIGHT:
-						metaPress(META_ALT_ON);
-						return true;
-					}
-				} else {
-					switch (keyCode) {
-					case KeyEvent.KEYCODE_ALT_LEFT:
-					case KeyEvent.KEYCODE_ALT_RIGHT:
-						metaPress(META_ALT_ON);
-						return true;
-					case KeyEvent.KEYCODE_SHIFT_LEFT:
-					case KeyEvent.KEYCODE_SHIFT_RIGHT:
-						metaPress(META_SHIFT_ON);
-						return true;
-					}
+				event.getRepeatCount() == 0) {
+				switch (keyCode) {
+				case KeyEvent.KEYCODE_ALT_LEFT:
+				case KeyEvent.KEYCODE_ALT_RIGHT:
+				    System.out.println("Alt down!");
+					metaPress(META_ALT_ON);
+					return true;
+				case KeyEvent.KEYCODE_SHIFT_LEFT:
+				    System.out.println("Shift down!");
+					metaPress(META_SHIFT_ON);
+					return true;
+				case ANDROID11_KEYCODE_CTRL_LEFT:
+				case ANDROID11_KEYCODE_CTRL_RIGHT:
+				    System.out.println("Ctrl down!");
+				    metaPress(META_CTRL_ON);
+				    return true;
+                case KeyEvent.KEYCODE_SHIFT_RIGHT:
+				    System.out.println("RSHIFT down!");
+				    metaPress(META_RSHIFT_ON);
+				    return true;
 				}
 			}
 
 			// look for special chars
 			switch(keyCode) {
+            case KeyEvent.KEYCODE_SEARCH:
+                System.out.println("Send escape!");
+                sendEscape();
+                return true;
 			case KeyEvent.KEYCODE_CAMERA:
 
 				// check to see which shortcut the camera button triggers
