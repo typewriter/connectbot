@@ -52,8 +52,12 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 	public final static int META_TAB = 0x80;
 	public final static int META_RSHIFT_ON = 0x100;
 
+	public final static int ANDROID9_KEYCODE_PAGE_UP = 0x5c;
+	public final static int ANDROID9_KEYCODE_PAGE_DOWN = 0x5d;
 	public final static int ANDROID11_KEYCODE_CTRL_LEFT = 0x71;
 	public final static int ANDROID11_KEYCODE_CTRL_RIGHT = 0x72;
+	public final static int ANDROID11_KEYCODE_MOVE_HOME = 0x7a;
+	public final static int ANDROID11_KEYCODE_MOVE_END = 0x7b;
     public final static int ANDROID11_META_CTRL_ON = 0x1000;
 
 	// The bit mask of momentary and lock states for each
@@ -268,6 +272,18 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
             case KeyEvent.KEYCODE_SEARCH:
                 System.out.println("Send escape!");
                 sendEscape();
+                return true;
+            case ANDROID11_KEYCODE_MOVE_HOME:
+                ((vt320) buffer).keyPressed(vt320.KEY_HOME, ' ', 0);
+                return true;
+            case ANDROID11_KEYCODE_MOVE_END:
+                ((vt320) buffer).keyPressed(vt320.KEY_END, ' ', 0);
+                return true;
+            case ANDROID9_KEYCODE_PAGE_UP:
+                ((vt320) buffer).keyPressed(vt320.KEY_PAGE_UP, ' ', 0);
+                return true;
+            case ANDROID9_KEYCODE_PAGE_DOWN:
+                ((vt320) buffer).keyPressed(vt320.KEY_PAGE_DOWN, ' ', 0);
                 return true;
 			case KeyEvent.KEYCODE_CAMERA:
 
