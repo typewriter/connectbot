@@ -198,7 +198,8 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
                     metaState &= ~META_SHIFT_ON;
                     return true;
                 case ANDROID11_KEYCODE_CTRL_LEFT:
-                case ANDROID11_KEYCODE_CTRL_RIGHT:
+                // case ANDROID11_KEYCODE_CTRL_RIGHT:
+				  case 96: // LifeTouch NOTE CTRL_LEFT
                     System.out.println("Ctrl up!");
                     metaState &= ~META_CTRL_ON;
                     return true;
@@ -315,7 +316,8 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 					metaPress(META_SHIFT_ON);
 					return true;
 				case ANDROID11_KEYCODE_CTRL_LEFT:
-				case ANDROID11_KEYCODE_CTRL_RIGHT:
+				// case ANDROID11_KEYCODE_CTRL_RIGHT:
+				case 96: // LifeTouch NOTE CTRL_LEFT
 				    System.out.println("Ctrl down!");
 				    metaPress(META_CTRL_ON);
 				    return true;
@@ -329,6 +331,7 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 			// look for special chars
 			switch(keyCode) {
             case KeyEvent.KEYCODE_SEARCH:
+            case 114: // LifeTouch NOTE Esc
                 System.out.println("Send escape!");
                 sendEscape();
                 return true;
