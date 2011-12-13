@@ -541,8 +541,8 @@ public class TerminalManager extends Service implements BridgeDisconnectedListen
 	}
 
 	private void vibrate() {
-		// if (vibrator != null)
-		// 	vibrator.vibrate(VIBRATE_DURATION);
+		if (vibrator != null)
+			vibrator.vibrate(VIBRATE_DURATION);
 	}
 
 	private void enableMediaPlayer() {
