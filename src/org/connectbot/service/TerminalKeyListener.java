@@ -108,6 +108,59 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 		updateKeymode();
 	}
 
+	// TODO: Modified by typewriter
+	private int key_en2jp(int keyCode, int metaState) {
+		if (keyCode == 9 && metaState == 65) {
+			return 34; // "
+		} else if (keyCode == 13 && metaState == 65) {
+			return 38; // &
+		} else if (keyCode == 14 && metaState == 65) {
+			return 39; // '
+		} else if (keyCode == 15 && metaState == 65) {
+			return 40; // (
+		} else if (keyCode == 16 && metaState == 65) {
+			return 41; // )
+		} else if (keyCode == 69 && metaState == 65) {
+			return 61; // =
+		} else if (keyCode == 70 && metaState == 0) {
+			return 94; // ^
+		} else if (keyCode == 70 && metaState == 65) {
+			return 126; // ~
+		} else if (keyCode == 116 && metaState == 0) {
+			return 92; // \
+		} else if (keyCode == 116 && metaState == 65) {
+			return 124; // |
+		} else if (keyCode == 115 && metaState == 0) {
+			return 92; // \
+		} else if (keyCode == 115 && metaState == 65) {
+			return 95; // _
+		} else if (keyCode == 71 && metaState == 0) {
+			return 64; // @
+		} else if (keyCode == 71 && metaState == 65) {
+			return 96; // `
+		} else if (keyCode == 72 && metaState == 0) {
+			return 91; // [
+		} else if (keyCode == 72 && metaState == 65) {
+			return 123; // {
+		} else if (keyCode == 74 && metaState == 65) {
+			return 43; // +
+		} else if (keyCode == 75 && metaState == 0) {
+			return 58; // :
+		} else if (keyCode == 75 && metaState == 65) {
+			return 42; // *
+		} else if (keyCode == 73 && metaState == 0) {
+			return 93; // ]
+		} else if (keyCode == 73 && metaState == 65) {
+			return 125; // }
+		} else if (keyCode == 55 && metaState == 65) {
+			return 60; // <
+		} else if (keyCode == 56 && metaState == 65) {
+			return 62; // >
+		} else {
+			return keymap.get(keyCode, metaState);
+		}
+	}
+
 	/**
 	 * Handle onKey() events coming down from a {@link TerminalView} above us.
 	 * Modify the keys to make more sense to a host then pass it to the transport.
@@ -115,6 +168,9 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 	public boolean onKey(View v, int keyCode, KeyEvent event) {
 		try {
 			final boolean hardKeyboardHidden = manager.hardKeyboardHidden;
+
+			String s = String.format("%d,%d ", event.getAction(), keyCode);
+			Log.v(TAG,"onKey1 " +s);	//debug
 
 			if (hardKeyboard && !hardKeyboardHidden) {
 			    metaState &= ~(META_SHIFT_LOCK | META_CTRL_LOCK | META_ALT_LOCK);
@@ -141,8 +197,8 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
                     System.out.println("Shift up!");
                     metaState &= ~META_SHIFT_ON;
                     return true;
-                case ANDROID11_KEYCODE_CTRL_LEFT:
-                case ANDROID11_KEYCODE_CTRL_RIGHT:
+                // case ANDROID11_KEYCODE_CTRL_RIGHT:
+				  case 96: // LifeTouch NOTE CTRL_LEFT
                     System.out.println("Ctrl up!");
                     metaState &= ~META_CTRL_ON;
                     return true;
@@ -172,7 +228,10 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 
 			boolean printing = (keymap.isPrintingKey(keyCode) ||
 			        keyCode == KeyEvent.KEYCODE_SPACE ||
-			        keyCode == KeyEvent.KEYCODE_TAB);
+			        keyCode == KeyEvent.KEYCODE_TAB ||
+			        keyCode == 115 || keyCode == 116); // TODO: Modified by typewriter
+
+			System.out.println("printing: " + printing);
 
 			// otherwise pass through to existing session
 			// print normal keys
@@ -197,7 +256,7 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 
 				/* & 0xfff to remove CTRL, ALT etc. state, which produce
 				 * unprintable characters, and make key == 0 */
-				int key = keymap.get(keyCode, curMetaState & 0xfff);
+				int key = key_en2jp(keyCode, curMetaState & 0xfff); // TODO: Modified by typewriter
                 System.out.println("keymap("+Integer.toString(keyCode)+", "+Integer.toString(curMetaState)+") = "+Integer.toString(key));
 
 				if ((metaState & META_CTRL_MASK) != 0) {
@@ -256,7 +315,8 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 					metaPress(META_SHIFT_ON);
 					return true;
 				case ANDROID11_KEYCODE_CTRL_LEFT:
-				case ANDROID11_KEYCODE_CTRL_RIGHT:
+				// case ANDROID11_KEYCODE_CTRL_RIGHT:
+				case 96: // LifeTouch NOTE CTRL_LEFT
 				    System.out.println("Ctrl down!");
 				    metaPress(META_CTRL_ON);
 				    return true;
@@ -270,6 +330,7 @@ public class TerminalKeyListener implements OnKeyListener, OnSharedPreferenceCha
 			// look for special chars
 			switch(keyCode) {
             case KeyEvent.KEYCODE_SEARCH:
+            case 114: // LifeTouch NOTE Esc
                 System.out.println("Send escape!");
                 sendEscape();
                 return true;
